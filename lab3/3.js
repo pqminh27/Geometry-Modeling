@@ -890,8 +890,8 @@ const Data = {
         //mCtr là vector phấp tuyến
         this.mCtr = new Array(this.pointsCtr.length)
         for (i = 0; i < this.pointsCtr.length; i++) {
-            x = 2 * (this.mPointsCtr[i].x - this.pointsCtr[i].x)
-            y = 2 * (this.mPointsCtr[i].y - this.pointsCtr[i].y)
+            x = (this.mPointsCtr[i].x - this.pointsCtr[i].x)
+            y = (this.mPointsCtr[i].y - this.pointsCtr[i].y)
 
             pt = new Point(x, y)
 

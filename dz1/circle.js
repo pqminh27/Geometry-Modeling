@@ -486,10 +486,10 @@ const Data = {
         this.pointsCtr[0].setPoint(x0 + (r * Math.sqrt(3)) / 2, y0 + r / 2, 1) //p0
         this.pointsCtr[1].setPoint(x0, y0 + 2 * r, 0.5) //p1
         this.pointsCtr[2].setPoint(x0 - (r * Math.sqrt(3)) / 2, y0 + r / 2, 1) //p2
-        this.pointsCtr[3].setPoint(x0 - r * Math.sqrt(3), y0 - r, 0.5) //pome3
+        this.pointsCtr[3].setPoint(x0 - r * Math.sqrt(3), y0 - r, 0.5) //p3
         this.pointsCtr[4].setPoint(x0, y0 - r, 1) //p4
         this.pointsCtr[5].setPoint(x0 + r * Math.sqrt(3), y0 - r, 0.5) //p5
-        this.pointsCtr[6].setPoint(x0 + (r * Math.sqrt(3)) / 2, y0 + r / 2, 1) //p6
+        this.pointsCtr[6].setPoint(x0 + (r * Math.sqrt(3)) / 2, y0 + r / 2, 1) //p6 == p0
         this.setVertices()
 
         if (this.drawCirclePoints) this.calculateCirclePoints()
@@ -546,6 +546,7 @@ const Data = {
         let t, x, y, dt, H, k, n
         n = this.pointsCtr.length - 1
         k = 2
+
         const knot_vector = new Float32Array([
             0.0,
             0.0,
@@ -569,9 +570,10 @@ const Data = {
             i = this.findSpan(n, k, t, knot_vector)
             const N = new Float32Array(this.pointsCtr.length)
             this.basisFunc(i, t, k, knot_vector, N)
+
             H = 0.0
             for (let r = 0; r < this.pointsCtr.length; r++) {
-                H = H + this.pointsCtr[r].h * N[r]
+                H += this.pointsCtr[r].h * N[r]
             }
             for (let r = 0; r < this.pointsCtr.length; r++) {
                 R[r] = (this.pointsCtr[r].h * N[r]) / H
@@ -579,8 +581,8 @@ const Data = {
             x = 0.0
             y = 0.0
             for (let r = 0; r < this.pointsCtr.length; r++) {
-                x = x + this.pointsCtr[r].x * R[r]
-                y = y + this.pointsCtr[r].y * R[r]
+                x += this.pointsCtr[r].x * R[r]
+                y += this.pointsCtr[r].y * R[r]
             }
             pt = new Point(x, y)
             this.pointsSpline[j] = pt

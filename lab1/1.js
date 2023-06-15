@@ -487,7 +487,7 @@ const Data = {
                 i++
             }
 
-            //NOTE: omega by formulas
+            //omega by formulas
             omega =
                 (t - this.pointsCtr[i].t) /
                 (this.pointsCtr[i + 1].t - this.pointsCtr[i].t)
@@ -497,7 +497,7 @@ const Data = {
             y =
                 this.pointsCtr[i].y * (1 - omega) +
                 this.pointsCtr[i + 1].y * omega
-            //NOTE: r(t) = pi*(1-omega) + pi+1*omega
+            //r(t) = pi*(1-omega) + pi+1*omega
             pt = new Point(x, y)
             this.pointsSpline[j] = pt
         }
