@@ -970,9 +970,9 @@ const Data = {
 
         this.gl.uniform4f(
             this.u_LightPosition,
-            Camera.x0,
+            Camera.x0 + 2.0,
             Camera.y0,
-            Camera.z0,
+            Camera.z0 / 2.0,
             1.0
         )
 
@@ -1410,7 +1410,7 @@ const Data = {
             A[j] = saved
         }
     },
-    //c_u()
+    //c_u, c'(u)
     calculateSectorialSurface: function () {
         let i, j
         let u, v
@@ -1454,101 +1454,126 @@ const Data = {
         ])
 
         const h = new Float32Array([1, 0.5, 1, 0.5, 1, 0.5, 1])
-        const du = 1 / (M - 1),
-            dv = 1 / (N - 1)
 
-        let j_u, j1_u
         const N_u = new Float32Array(k + 1)
         const N1_u = new Float32Array(k)
-        let H = 0.0,
-            H1 = 0.0
+        let H = 0.0
         const R_u = new Float32Array(k + 1)
-        const R1_u = new Float32Array(k)
         let x, y, z
-        let x_u, y_u, z_u
         let a
-        let x1, y1, z1
+        let point_C_u, point_C_u_diff
 
+        let C_u = (u) => {
+            let j_u = this.findSpan(N_ctr - 1, k, u, u_knot_vector)
+            this.basisFunc(j_u, u, k, u_knot_vector, N_u)
+            H = 0.0
+            for (a = j_u - k; a <= j_u; a++) {
+                H += h[a] * N_u[a - (j_u - k)]
+            }
+            // console.log("H: ", H)
+            for (a = j_u - k; a <= j_u; a++) {
+                R_u[a - (j_u - k)] = (h[a] * N_u[a - (j_u - k)]) / H
+            }
+            //console.log("R: ", R_u)
+            let x1 = 0,
+                y1 = 0,
+                z1 = 0
+            for (a = j_u - k; a <= j_u; a++) {
+                x1 += this.pointsCtr[a].x * R_u[a - (j_u - k)]
+                y1 += this.pointsCtr[a].y * R_u[a - (j_u - k)]
+                z1 += this.pointsCtr[a].z * R_u[a - (j_u - k)]
+            }
+            return {x: x1, y: y1, z: z1}
+        }
+
+        let h_u = (u) => {
+            let j_u = this.findSpan(N_ctr - 1, k, u, u_knot_vector)
+            this.basisFunc(j_u, u, k, u_knot_vector, N_u)
+            let H = 0
+            for (a = j_u - k; a <= j_u; a++) {
+                H += h[a] * N_u[a - (j_u - k)]
+            }
+            return H
+        }
+
+        let A_u_diff = (u) => {
+            let j_u = this.findSpan(N_ctr - 2, k - 1, u, u1_knot_vector)
+            this.basisFunc(j_u, u, k - 1, u1_knot_vector, N1_u)
+            let A_x = 0,
+                A_y = 0,
+                A_z = 0
+            for (a = j_u - k + 1; a <= j_u; a++) {
+                A_x +=
+                    (N1_u[a - (j_u - k + 1)] *
+                        k *
+                        (h[a + 1] * this.pointsCtr[a + 1].x -
+                            h[a] * this.pointsCtr[a].x)) /
+                    (u_knot_vector[a + 1 + k] - u_knot_vector[a + 1])
+                A_y +=
+                    (N1_u[a - (j_u - k + 1)] *
+                        k *
+                        (h[a + 1] * this.pointsCtr[a + 1].y -
+                            h[a] * this.pointsCtr[a].y)) /
+                    (u_knot_vector[a + 1 + k] - u_knot_vector[a + 1])
+                A_z +=
+                    (N1_u[a - (j_u - k + 1)] *
+                        k *
+                        (h[a + 1] * this.pointsCtr[a + 1].z -
+                            h[a] * this.pointsCtr[a].z)) /
+                    (u_knot_vector[a + 1 + k] - u_knot_vector[a + 1])
+            }
+            return {x: A_x, y: A_y, z: A_z}
+        }
+
+        let h_u_diff = (u) => {
+            let j_u = this.findSpan(N_ctr - 2, k - 1, u, u1_knot_vector)
+            this.basisFunc(j_u, u, k - 1, u1_knot_vector, N1_u)
+            let H = 0
+            for (a = j_u - k + 1; a <= j_u; a++) {
+                H +=
+                    (N1_u[a - (j_u - k + 1)] * k * (h[a + 1] - h[a])) /
+                    (u_knot_vector[a + 1 + k] - u_knot_vector[a + 1])
+            }
+            return H
+        }
+
+        let C_u_diff = (u) => {
+            let A_u_diff_point = A_u_diff(u)
+            let h_u_diff_point = h_u_diff(u)
+            let C_u_point = C_u(u)
+            let h_u_point = h_u(u)
+            let C_u_diff_x =
+                (A_u_diff_point.x - h_u_diff_point * C_u_point.x) / h_u_point
+            let C_u_diff_y =
+                (A_u_diff_point.y - h_u_diff_point * C_u_point.y) / h_u_point
+            let C_u_diff_z =
+                (A_u_diff_point.z - h_u_diff_point * C_u_point.z) / h_u_point
+            return {x: C_u_diff_x, y: C_u_diff_y, z: C_u_diff_z}
+        }
+
+        const du = 1 / (M - 1),
+            dv = 1 / (N - 1)
         for (i = 0; i < N; i++) {
             v = i * dv
 
             for (j = 0; j < M; j++) {
                 u = j * du
-                j_u = this.findSpan(N_ctr - 1, k, u, u_knot_vector)
-                this.basisFunc(j_u, u, k, u_knot_vector, N_u)
-                // console.log("N_u: ", N_u)
-                H = 0.0
-                for (a = j_u - k; a <= j_u; a++) {
-                    H += h[a] * N_u[a - (j_u - k)]
-                }
-                // console.log("H: ", H)
-                for (a = j_u - k; a <= j_u; a++) {
-                    R_u[a - (j_u - k)] = (h[a] * N_u[a - (j_u - k)]) / H
-                }
-                //console.log("R: ", R_u)
-                x1 = 0
-                y1 = 0
-                z1 = 0
-                for (a = j_u - k; a <= j_u; a++) {
-                    x1 += this.pointsCtr[a].x * R_u[a - (j_u - k)]
-                    y1 += this.pointsCtr[a].y * R_u[a - (j_u - k)]
-                    z1 += this.pointsCtr[a].z * R_u[a - (j_u - k)]
-                }
-
-                x = (1 - v) * x1 + this.pointsCtr[N_ctr].x * v
-                y = (1 - v) * y1 + this.pointsCtr[N_ctr].y * v
-                z = (1 - v) * z1 + this.pointsCtr[N_ctr].z * v
-                //console.log(i,j)
+                point_C_u = C_u(u)
+                x = (1 - v) * point_C_u.x + this.pointsCtr[N_ctr].x * v
+                y = (1 - v) * point_C_u.y + this.pointsCtr[N_ctr].y * v
+                z = (1 - v) * point_C_u.z + this.pointsCtr[N_ctr].z * v
                 // console.log(x, y, z)
-
                 const pt = new Point(x, y, z)
                 this.pointsSurface[i][j] = pt
 
-                // j1_u = this.findSpan(N_ctr - 2, k - 1, u, u1_knot_vector)
-                // this.basisFunc(j1_u, u, k - 1, u1_knot_vector, N1_u)
-                // H1 = 0.0
-                // for (a = j1_u - k + 1; a <= j1_u; a++) {
-                //     H1 += h[a] * N1_u[a - (j1_u - k + 1)]
-                // }
-                // // console.log("H1: ", H1)
-                // for (a = j1_u - k + 1; a <= j1_u; a++) {
-                //     R1_u[a - (j1_u - k + 1)] =
-                //         (h[a] * N1_u[a - (j1_u - k + 1)]) / H1
-                // }
-                // // console.log("R1_u:", R1_u)
-                // //CALCULATE TANGENT VECTORS
-                // x_u = 0
-                // y_u = 0
-                // z_u = 0
-                // for (a = j1_u - k + 1; a <= j1_u; a++) {
-                //     x_u +=
-                //         ((1 - v) *
-                //             k *
-                //             R1_u[a - (j1_u - k + 1)] *
-                //             (this.pointsCtr[a + 1].x - this.pointsCtr[a].x)) /
-                //             (u_knot_vector[a + 1 + k] - u_knot_vector[a + 1]) +
-                //         0
-                //     //console.log(this.pointsCtr[a + 1].x - this.pointsCtr[a].x)
-                //     y_u +=
-                //         ((1 - v) *
-                //             k *
-                //             R1_u[a - (j1_u - k + 1)] *
-                //             (this.pointsCtr[a + 1].y - this.pointsCtr[a].y)) /
-                //             (u_knot_vector[a + 1 + k] - u_knot_vector[a + 1]) +
-                //         0
-                //     z_u +=
-                //         ((1 - v) *
-                //             k *
-                //             R1_u[a - (j1_u - k + 1)] *
-                //             (this.pointsCtr[a + 1].z - this.pointsCtr[a].z)) /
-                //             (u_knot_vector[a + 1 + k] - u_knot_vector[a + 1]) +
-                //         0
-                //     // console.log(x_u, y_u, z_u)
-                // }
-                // console.log("dc(u)/du: ", x_u, y_u, z_u)
-                const x_v = -x1 + this.pointsCtr[N_ctr].x + 0
-                const y_v = -y1 + this.pointsCtr[N_ctr].y + 0
-                const z_v = -z1 + this.pointsCtr[N_ctr].z + 0
+                const x_v = -point_C_u.x + this.pointsCtr[N_ctr].x
+                const y_v = -point_C_u.y + this.pointsCtr[N_ctr].y
+                const z_v = -point_C_u.z + this.pointsCtr[N_ctr].z
+
+                point_C_u_diff = C_u_diff(u)
+                const x_u = point_C_u_diff.x * (1 - v)
+                const y_u = point_C_u_diff.y * (1 - v)
+                const z_u = point_C_u_diff.z * (1 - v)
 
                 const pt_u = vec3.fromValues(x_u, y_u, z_u)
                 const pt_v = vec3.fromValues(x_v, y_v, z_v)
@@ -1556,7 +1581,8 @@ const Data = {
                 //CALCULATE NORMAL VECTOR
                 const normal = vec3.create()
                 vec3.cross(normal, pt_u, pt_v)
-                // console.log(normal)
+                console.log("v: ", v)
+                console.log("vector normal: ", normal)
                 this.normalsSurface[i][j][0] = normal[0]
                 this.normalsSurface[i][j][1] = normal[1]
                 this.normalsSurface[i][j][2] = normal[2]
