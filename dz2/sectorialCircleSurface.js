@@ -970,9 +970,9 @@ const Data = {
 
         this.gl.uniform4f(
             this.u_LightPosition,
-            Camera.x0 + 2.0,
+            Camera.x0,
             Camera.y0,
-            Camera.z0 / 2.0,
+            Camera.z0,
             1.0
         )
 
@@ -1555,7 +1555,6 @@ const Data = {
             dv = 1 / (N - 1)
         for (i = 0; i < N; i++) {
             v = i * dv
-
             for (j = 0; j < M; j++) {
                 u = j * du
                 point_C_u = C_u(u)
@@ -1580,7 +1579,7 @@ const Data = {
 
                 //CALCULATE NORMAL VECTOR
                 const normal = vec3.create()
-                vec3.cross(normal, pt_u, pt_v)
+                vec3.cross(normal, pt_v, pt_u)
                 console.log("v: ", v)
                 console.log("vector normal: ", normal)
                 this.normalsSurface[i][j][0] = normal[0]
